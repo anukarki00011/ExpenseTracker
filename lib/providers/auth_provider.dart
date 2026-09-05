@@ -14,6 +14,12 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isAuthenticated => _user != null;
 
+  AuthProvider() {
+    // Check if user is already logged in (from persisted session)
+    _user = _authService.getCurrentUser();
+    // Could also fetch full profile asynchronously, but for now basic info is enough
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
@@ -34,12 +40,12 @@ class AuthProvider extends ChangeNotifier {
         _setLoading(false);
         return true;
       } else {
-        _setError('Invalid email or password');
+        _setError('Login failed');
         _setLoading(false);
         return false;
       }
     } catch (e) {
-      _setError('Login failed: ${e.toString()}');
+      _setError(e.toString());
       _setLoading(false);
       return false;
     }
@@ -60,7 +66,7 @@ class AuthProvider extends ChangeNotifier {
         return false;
       }
     } catch (e) {
-      _setError('Registration failed: ${e.toString()}');
+      _setError(e.toString());
       _setLoading(false);
       return false;
     }
@@ -80,7 +86,7 @@ class AuthProvider extends ChangeNotifier {
       await _authService.resetPassword(email);
       _setLoading(false);
     } catch (e) {
-      _setError('Password reset failed: ${e.toString()}');
+      _setError(e.toString());
       _setLoading(false);
     }
   }
