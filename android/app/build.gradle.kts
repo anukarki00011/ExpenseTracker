@@ -1,14 +1,23 @@
 plugins {
     id("com.android.application")
+<<<<<<< HEAD
     id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 
+=======
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("dev.flutter.flutter-gradle-plugin")
+>>>>>>> 3438cd27392111afbe20b42632750edc4574bc28
 }
 
 android {
     namespace = "com.example.expensetracker"
+<<<<<<< HEAD
     compileSdk = 36
+=======
+    compileSdk = flutter.compileSdkVersion
+>>>>>>> 3438cd27392111afbe20b42632750edc4574bc28
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
