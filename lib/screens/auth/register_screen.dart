@@ -23,6 +23,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
+  DateTime? _selectedDob;
 
   @override
   void dispose() {
@@ -33,16 +34,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  Future<void> _pickDob() async {
+    final now = DateTime.now();
+    final initialDate = DateTime(now.year - 20, now.month, now.day);
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1900),
+      lastDate: now,
+    );
+    if (date != null) {
+      setState(() => _selectedDob = date);
+    }
+  }
+
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
+      if (_selectedDob == null) {
+        setState(() => _errorMessage = 'Please select your date of birth');
+        return;
+      }
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final success = await authProvider.register(
-        _nameController.text.trim(),
-        _emailController.text.trim(),
-        _passwordController.text,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        dob: _selectedDob!,
       );
       if (success) {
-        Navigator.pushReplacementNamed(context, AppRoutes.home);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text(authProvider.infoMessage ?? 'Verification email sent')),
+        );
+        Navigator.pop(context);
       } else {
         setState(() {
           _errorMessage = authProvider.error;
@@ -106,6 +131,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   keyboardType: TextInputType.emailAddress,
                   validator: Validators.email,
                   textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 20),
+                // Date of Birth
+                InkWell(
+                  onTap: _pickDob,
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: 'Date of Birth',
+                      prefixIcon: const Icon(Icons.cake),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    child: Text(
+                      _selectedDob == null
+                          ? 'Select your date of birth'
+                          : '${_selectedDob!.day}/${_selectedDob!.month}/${_selectedDob!.year}',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
                 CustomTextField(

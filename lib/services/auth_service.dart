@@ -41,8 +41,12 @@ class AuthService {
     }
   }
 
-  Future<UserModel?> register(
-      String name, String email, String password) async {
+  Future<UserModel?> register({
+    required String name,
+    required String email,
+    required String password,
+    required DateTime dob,
+  }) async {
     try {
       final credential = await _auth.createUserWithEmailAndPassword(
         email: email,
@@ -56,6 +60,7 @@ class AuthService {
           name: name,
           email: email,
           createdAt: DateTime.now(),
+          dob: dob,
         );
         await _createUserInFirestore(userModel);
         await user.sendEmailVerification();
@@ -65,6 +70,10 @@ class AuthService {
     } catch (e) {
       throw _handleAuthException(e);
     }
+  }
+
+  Future<void> _createUserInFirestore(UserModel user) async {
+    await _firestore.collection('users').doc(user.uid).set(user.toMap());
   }
 
   Future<void> logout() async {
@@ -96,14 +105,14 @@ class AuthService {
     }
   }
 
-  Future<void> _createUserInFirestore(UserModel user) async {
-    await _firestore.collection('users').doc(user.uid).set({
-      'uid': user.uid,
-      'name': user.name,
-      'email': user.email,
-      'createdAt': Timestamp.fromDate(user.createdAt),
-    });
-  }
+  // Future<void> _createUserInFirestore(UserModel user) async {
+  //   await _firestore.collection('users').doc(user.uid).set({
+  //     'uid': user.uid,
+  //     'name': user.name,
+  //     'email': user.email,
+  //     'createdAt': Timestamp.fromDate(user.createdAt),
+  //   });
+  // }
 
   Future<UserModel?> _getUserFromFirestore(String uid) async {
     try {

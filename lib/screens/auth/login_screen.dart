@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   String? _errorMessage;
+  bool _showResendButton = false;
 
   @override
   void dispose() {
@@ -40,8 +41,20 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         setState(() {
           _errorMessage = authProvider.error;
+          _showResendButton =
+              authProvider.error?.contains('not verified') ?? false;
         });
       }
+    }
+  }
+
+  Future<void> _resendVerification() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    await authProvider.resendVerificationEmail();
+    if (authProvider.infoMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(authProvider.infoMessage!)),
+      );
     }
   }
 
@@ -107,7 +120,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     }
                   },
                 ),
-                // Show/hide password toggle
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
@@ -124,6 +136,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: const TextStyle(color: AppColors.error),
                     textAlign: TextAlign.center,
                   ),
+                  if (_showResendButton) ...[
+                    TextButton(
+                      onPressed: _resendVerification,
+                      child: const Text('Resend verification email'),
+                    ),
+                  ],
                 ],
                 const SizedBox(height: 20),
                 CustomButton(

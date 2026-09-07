@@ -26,6 +26,8 @@ dependencies:
 
   # Utilities
   intl: ^0.18.0
+  nepali_utils: ^3.0.8
+  nepali_date_picker: ^6.0.2
 
 dev_dependencies:
   flutter_test:

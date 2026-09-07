@@ -5,12 +5,14 @@ class UserModel {
   final String name;
   final String email;
   final DateTime createdAt;
+  final DateTime? dob; // <-- added
 
   UserModel({
     required this.uid,
     required this.name,
     required this.email,
     required this.createdAt,
+    this.dob,
   });
 
   Map<String, dynamic> toMap() {
@@ -19,6 +21,7 @@ class UserModel {
       'name': name,
       'email': email,
       'createdAt': Timestamp.fromDate(createdAt),
+      'dob': dob != null ? Timestamp.fromDate(dob!) : null,
     };
   }
 
@@ -28,6 +31,17 @@ class UserModel {
       name: map['name'] ?? '',
       email: map['email'] ?? '',
       createdAt: _parseDate(map['createdAt']),
+      dob: map['dob'] != null ? _parseDate(map['dob']) : null,
+    );
+  }
+
+  UserModel copyWith({String? name, String? email}) {
+    return UserModel(
+      uid: uid,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      createdAt: createdAt,
+      dob: dob,
     );
   }
 
@@ -39,17 +53,5 @@ class UserModel {
     } else {
       return DateTime.now();
     }
-  }
-
-  UserModel copyWith({
-    String? name,
-    String? email,
-  }) {
-    return UserModel(
-      uid: uid,
-      name: name ?? this.name,
-      email: email ?? this.email,
-      createdAt: createdAt,
-    );
   }
 }

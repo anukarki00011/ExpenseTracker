@@ -8,16 +8,16 @@ class AuthProvider extends ChangeNotifier {
   UserModel? _user;
   bool _isLoading = false;
   String? _error;
+  String? _infoMessage;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  String? get infoMessage => _infoMessage;
   bool get isAuthenticated => _user != null;
 
   AuthProvider() {
-    // Check if user is already logged in (from persisted session)
     _user = _authService.getCurrentUser();
-    // Could also fetch full profile asynchronously, but for now basic info is enough
   }
 
   void _setLoading(bool value) {
@@ -33,6 +33,7 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> login(String email, String password) async {
     _setLoading(true);
     _setError(null);
+    _infoMessage = null;
     try {
       final user = await _authService.login(email, password);
       if (user != null) {
@@ -51,14 +52,27 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> register(String name, String email, String password) async {
+  Future<bool> register({
+    required String name,
+    required String email,
+    required String password,
+    required DateTime dob,
+  }) async {
     _setLoading(true);
     _setError(null);
+    _infoMessage = null;
     try {
-      final user = await _authService.register(name, email, password);
+      final user = await _authService.register(
+        name: name,
+        email: email,
+        password: password,
+        dob: dob,
+      );
       if (user != null) {
-        _user = user;
+        _infoMessage =
+            'Registration successful! A verification email has been sent to $email. Please verify to log in.';
         _setLoading(false);
+        notifyListeners();
         return true;
       } else {
         _setError('Registration failed');
@@ -97,7 +111,6 @@ class AuthProvider extends ChangeNotifier {
     _setError(null);
     try {
       await _authService.updateUserName(_user!.uid, newName);
-      // Update local user
       _user = UserModel(
         uid: _user!.uid,
         name: newName,
@@ -114,8 +127,20 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> resendVerificationEmail() async {
+    try {
+      await _authService.resendVerificationEmail();
+      _infoMessage = 'Verification email sent. Please check your inbox.';
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to resend verification email: $e';
+      notifyListeners();
+    }
+  }
+
   void clearError() {
     _error = null;
+    _infoMessage = null;
     notifyListeners();
   }
 }
