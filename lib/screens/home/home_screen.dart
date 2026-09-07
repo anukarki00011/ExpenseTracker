@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/transaction_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/navigation_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/loading_widget.dart';
@@ -13,6 +14,40 @@ import '../transactions/add_transaction_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
+  // Helper to show delete confirmation and delete a transaction
+  Future<void> _confirmDelete(BuildContext context, TransactionModel tx) async {
+    final provider = Provider.of<TransactionProvider>(context, listen: false);
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Transaction'),
+        content: Text('Delete "${tx.title}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      final success = await provider.deleteTransaction(tx.id);
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transaction deleted')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(provider.error ?? 'Failed to delete')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +70,7 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () async {
-          // The stream will update automatically; no need to fetch manually
-        },
+        onRefresh: () async {},
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
@@ -79,7 +112,7 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '\$${transactionProvider.totalBalance.toStringAsFixed(2)}',
+                        'Rs ${transactionProvider.totalBalance.toStringAsFixed(2)}',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 32,
@@ -117,35 +150,38 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: SummaryCard(
-                      title: 'Income',
-                      amount: transactionProvider.monthlyIncome,
-                      icon: Icons.arrow_upward,
-                      color: AppColors.income,
+              IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: SummaryCard(
+                        title: 'Income',
+                        amount: transactionProvider.monthlyIncome,
+                        icon: Icons.arrow_upward,
+                        color: AppColors.income,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SummaryCard(
-                      title: 'Expense',
-                      amount: transactionProvider.monthlyExpense,
-                      icon: Icons.arrow_downward,
-                      color: AppColors.expense,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SummaryCard(
+                        title: 'Expense',
+                        amount: transactionProvider.monthlyExpense,
+                        icon: Icons.arrow_downward,
+                        color: AppColors.expense,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: SummaryCard(
-                      title: 'Balance',
-                      amount: transactionProvider.monthlyBalance,
-                      icon: Icons.account_balance_wallet,
-                      color: AppColors.primary,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SummaryCard(
+                        title: 'Balance',
+                        amount: transactionProvider.monthlyBalance,
+                        icon: Icons.account_balance_wallet,
+                        color: AppColors.primary,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -162,10 +198,9 @@ class HomeScreen extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      // Navigate to Transactions tab (index 1)
-                      // We'll use a callback or directly set bottom nav index.
-                      // Since HomeScreen is inside MainScreen, we can use Provider to change index.
-                      // For now, do nothing or use a simple approach.
+                      // Switch to Transactions tab (index 1)
+                      Provider.of<NavigationProvider>(context, listen: false)
+                          .setIndex(1);
                     },
                     child: const Text('See All'),
                   ),
@@ -186,8 +221,14 @@ class HomeScreen extends StatelessWidget {
                   return TransactionCard(
                     transaction: tx,
                     onTap: () {
-                      // Navigate to edit transaction screen (later)
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => AddTransactionScreen(transaction: tx),
+                        ),
+                      );
                     },
+                    onLongPress: () => _confirmDelete(context, tx),
                   );
                 }),
             ],
@@ -229,7 +270,7 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
             Text(
-              '\$${amount.toStringAsFixed(2)}',
+              'Rs ${amount.toStringAsFixed(2)}',
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,

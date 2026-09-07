@@ -7,11 +7,13 @@ import '../utils/date_utils.dart';
 class TransactionCard extends StatelessWidget {
   final TransactionModel transaction;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const TransactionCard({
     Key? key,
     required this.transaction,
     this.onTap,
+    this.onLongPress,
   }) : super(key: key);
 
   @override
@@ -24,6 +26,7 @@ class TransactionCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 6),
       child: ListTile(
         onTap: onTap,
+        onLongPress: onLongPress, // <-- added
         leading: CircleAvatar(
           backgroundColor: color.withOpacity(0.1),
           child: Icon(icon, color: color),

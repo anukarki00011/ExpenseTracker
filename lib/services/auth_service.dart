@@ -6,12 +6,9 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get current user (returns UserModel if logged in)
   UserModel? getCurrentUser() {
     final user = _auth.currentUser;
     if (user != null) {
-      // We'll create a basic UserModel from Firebase user
-      // The full profile (name) will be fetched later from Firestore
       return UserModel(
         uid: user.uid,
         name: user.displayName ?? '',
@@ -22,7 +19,6 @@ class AuthService {
     return null;
   }
 
-  // Login with email and password
   Future<UserModel?> login(String email, String password) async {
     try {
       final credential = await _auth.signInWithEmailAndPassword(
@@ -31,7 +27,12 @@ class AuthService {
       );
       final user = credential.user;
       if (user != null) {
-        // Fetch user profile from Firestore to get name
+        if (!user.emailVerified) {
+          throw FirebaseAuthException(
+            code: 'email-not-verified',
+            message: 'Email not verified. Please verify your email first.',
+          );
+        }
         return await _getUserFromFirestore(user.uid);
       }
       return null;
@@ -40,7 +41,6 @@ class AuthService {
     }
   }
 
-  // Register new user
   Future<UserModel?> register(
       String name, String email, String password) async {
     try {
@@ -50,9 +50,7 @@ class AuthService {
       );
       final user = credential.user;
       if (user != null) {
-        // Update display name
         await user.updateDisplayName(name);
-        // Create user document in Firestore
         final userModel = UserModel(
           uid: user.uid,
           name: name,
@@ -60,6 +58,7 @@ class AuthService {
           createdAt: DateTime.now(),
         );
         await _createUserInFirestore(userModel);
+        await user.sendEmailVerification();
         return userModel;
       }
       return null;
@@ -68,12 +67,10 @@ class AuthService {
     }
   }
 
-  // Logout
   Future<void> logout() async {
     await _auth.signOut();
   }
 
-  // Reset password
   Future<void> resetPassword(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -82,7 +79,23 @@ class AuthService {
     }
   }
 
-  // Helper: create user document in Firestore
+  Future<void> updateUserName(String userId, String newName) async {
+    final user = _auth.currentUser;
+    if (user != null) {
+      await user.updateDisplayName(newName);
+    }
+    await _firestore.collection('users').doc(userId).update({
+      'name': newName,
+    });
+  }
+
+  Future<void> resendVerificationEmail() async {
+    final user = _auth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
+
   Future<void> _createUserInFirestore(UserModel user) async {
     await _firestore.collection('users').doc(user.uid).set({
       'uid': user.uid,
@@ -92,14 +105,12 @@ class AuthService {
     });
   }
 
-  // Helper: fetch user from Firestore
   Future<UserModel?> _getUserFromFirestore(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();
       if (doc.exists) {
         return UserModel.fromMap(doc.data()!);
       }
-      // Fallback: use Firebase Auth user data
       final user = _auth.currentUser;
       if (user != null) {
         return UserModel(
@@ -115,7 +126,6 @@ class AuthService {
     }
   }
 
-  // Convert Firebase exceptions to user-friendly messages
   String _handleAuthException(Object e) {
     if (e is FirebaseAuthException) {
       switch (e.code) {
@@ -131,6 +141,8 @@ class AuthService {
           return 'Password is too weak (at least 6 characters).';
         case 'network-request-failed':
           return 'Network error. Please check your connection.';
+        case 'email-not-verified':
+          return 'Email not verified. Please verify your email first.';
         default:
           return e.message ?? 'Authentication failed.';
       }

@@ -91,6 +91,29 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateProfile(String newName) async {
+    if (_user == null) return false;
+    _setLoading(true);
+    _setError(null);
+    try {
+      await _authService.updateUserName(_user!.uid, newName);
+      // Update local user
+      _user = UserModel(
+        uid: _user!.uid,
+        name: newName,
+        email: _user!.email,
+        createdAt: _user!.createdAt,
+      );
+      _setLoading(false);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError('Failed to update profile: $e');
+      _setLoading(false);
+      return false;
+    }
+  }
+
   void clearError() {
     _error = null;
     notifyListeners();

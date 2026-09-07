@@ -40,4 +40,16 @@ class UserModel {
       return DateTime.now();
     }
   }
+
+  UserModel copyWith({
+    String? name,
+    String? email,
+  }) {
+    return UserModel(
+      uid: uid,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      createdAt: createdAt,
+    );
+  }
 }

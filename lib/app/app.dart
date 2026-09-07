@@ -10,6 +10,7 @@ import '../screens/splash/splash_screen.dart';
 import '../screens/main_screen.dart';
 import 'routes.dart';
 import 'theme.dart';
+import '../providers/navigation_provider.dart';
 
 class App extends StatelessWidget {
   const App({Key? key}) : super(key: key);
@@ -31,6 +32,7 @@ class App extends StatelessWidget {
             return previous ?? TransactionProvider(authProvider: auth);
           },
         ),
+        ChangeNotifierProvider(create: (_) => NavigationProvider()),
       ],
       child: MaterialApp(
         title: 'SpendWise',
